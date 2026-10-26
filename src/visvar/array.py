@@ -47,7 +47,9 @@ class Array:
         up = np.array([np.cos(lat) * np.cos(lon), np.cos(lat) * np.sin(lon), np.sin(lat)])
         r0 = np.array([ref.x.to_value(u.m), ref.y.to_value(u.m), ref.z.to_value(u.m)])
         pos = r0 + enu[:, 0:1] * e + enu[:, 1:2] * n + enu[:, 2:3] * up
-        names = names or [f"ANT{i:03d}" for i in range(len(enu))]
+        # names = names or [f"ANT{i:03d}" for i in range(len(enu))]
+        if names is None:
+            names = [f"ANT{i:03d}" for i in range(len(enu))]
         return cls(names, pos, location=ref, **kw)
 
     @classmethod
