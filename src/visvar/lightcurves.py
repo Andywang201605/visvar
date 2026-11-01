@@ -13,6 +13,13 @@ from __future__ import annotations
 
 import numpy as np
 
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
+logger = logging.getLogger(__name__)
+
 # Dispersion constant: delay = K_DM * DM * (nu_GHz**-2 - nu_ref_GHz**-2)  [s]
 K_DM = 4.148808e-3  # s GHz^2 cm^3 / pc
 
@@ -55,6 +62,8 @@ class Lightcurve:
     def forloop_mean(self, t, dt, freq, df, nt_sub=None, nf_sub=None):
         """Average flux over integrations ``[t-dt/2, t+dt/2]`` and channels
         ``[f-df/2, f+df/2]``.  Returns array (ntime, nchan)."""
+        logger.info("Using slow for-loop mean() for lightcurve %s", self.__class__.__name__)
+        logger.info(f"start time: {t[0]}, end time: {t[-1]}, dt: {dt}, start freq: {freq[0]}, end freq: {freq[-1]}, df: {df}")
         t = np.atleast_1d(np.asarray(t, dtype=float))
         freq = np.atleast_1d(np.asarray(freq, dtype=float))
         dt = float(dt)
@@ -73,6 +82,8 @@ class Lightcurve:
     def mean(self, t, dt, freq, df, nt_sub=None, nf_sub=None):
         """Average flux over integrations ``[t-dt/2, t+dt/2]`` and channels
         ``[f-df/2, f+df/2]``.  Returns array (ntime, nchan)."""
+        logger.info("Using vectorized mean() for lightcurve %s", self.__class__.__name__)
+        logger.info(f"start time: {t[0]}, end time: {t[-1]}, dt: {dt}, start freq: {freq[0]}, end freq: {freq[-1]}, df: {df}")
         t = np.atleast_1d(np.asarray(t, dtype=float))
         freq = np.atleast_1d(np.asarray(freq, dtype=float))
         dt = float(dt)
