@@ -52,7 +52,7 @@ class Lightcurve:
             return 1
         return int(np.clip(np.ceil(4.0 * df / self.freqscale), 1, MAX_SUB))
 
-    def mean(self, t, dt, freq, df, nt_sub=None, nf_sub=None):
+    def forloop_mean(self, t, dt, freq, df, nt_sub=None, nf_sub=None):
         """Average flux over integrations ``[t-dt/2, t+dt/2]`` and channels
         ``[f-df/2, f+df/2]``.  Returns array (ntime, nchan)."""
         t = np.atleast_1d(np.asarray(t, dtype=float))
@@ -69,6 +69,22 @@ class Lightcurve:
             for j in range(nt):
                 out += self.evaluate(t + toff[j], fk)
         return out / (nt * nf)
+
+    def mean(self, t, dt, freq, df, nt_sub=None, nf_sub=None):
+        """Average flux over integrations ``[t-dt/2, t+dt/2]`` and channels
+        ``[f-df/2, f+df/2]``.  Returns array (ntime, nchan)."""
+        t = np.atleast_1d(np.asarray(t, dtype=float))
+        freq = np.atleast_1d(np.asarray(freq, dtype=float))
+        dt = float(dt)
+        df = float(df)
+        nt = nt_sub if nt_sub is not None else self.n_time_sub(dt)
+        nf = nf_sub if nf_sub is not None else self.n_freq_sub(freq, df)
+        toff = ((np.arange(nt) + 0.5) / nt - 0.5) * dt
+        foff = ((np.arange(nf) + 0.5) / nf - 0.5) * df
+        T = t[:, None, None, None] + toff[None, :, None, None]
+        F = freq[None, None, :, None] + foff[None, None, None, :]
+        vals = self.evaluate(T, F)
+        return vals.mean(axis=(1, 2, 4))  # average over time and frequency sub-samples
 
     # -- arithmetic ---------------------------------------------------------
     def __add__(self, other):
@@ -365,15 +381,20 @@ class BoxcarBurst(Lightcurve):
     def __init__(self, t0, width, peak=1.0, dm=0.0, ref_freq=None):
         self.t0, self.width, self.peak = float(t0), float(width), float(peak)
         self.dm = float(dm)
-        self.ref_freq = ref_freq
+        if ref_freq is None: self.ref_freq = np.inf
+        else: self.ref_freq = ref_freq
         self.timescale = self.width
 
+    # def delay(self, freq):
+    #     if self.dm == 0.0:
+    #         return np.zeros(np.shape(freq))
+    #     d = K_DM * self.dm * (np.asarray(freq, float) / 1e9) ** -2
+    #     if self.ref_freq is not None:
+    #         d = d - K_DM * self.dm * (self.ref_freq / 1e9) ** -2
+    #     return d
     def delay(self, freq):
-        if self.dm == 0.0:
-            return np.zeros(np.shape(freq))
         d = K_DM * self.dm * (np.asarray(freq, float) / 1e9) ** -2
-        if self.ref_freq is not None:
-            d = d - K_DM * self.dm * (self.ref_freq / 1e9) ** -2
+        d = d - K_DM * self.dm * (self.ref_freq / 1e9) ** -2
         return d
 
     def evaluate(self, t, freq):
