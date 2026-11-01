@@ -163,4 +163,15 @@ class MwaSimObs:
 
 
 
-    
+if __name__ == "__main__":
+    mwasim = MwaSimObs(metafile="./metadata.txt", tilefile="./mwa_tile_pos.txt", maxant=10)
+    starttime = Time("2026-10-26 12:00:00", format="iso", scale="utc")
+    sim_start_mjd_s = starttime.mjd * 86400.0
+    times_mjd_s = sim_start_mjd_s + np.arange(0, 60, 0.1)  # 60 seconds of observation
+    src = mwasim.generate_burst(
+        sim_start_mjd_s, burst_mjd_s=sim_start_mjd_s + 5.0, width=1.0, peak=1.0, dm=400.0, ref_freq=150e6, 
+        ra=mwasim.phasecentre.ra.deg, dec=mwasim.phasecentre.dec.deg
+    )
+    vis = mwasim.predict_visibilities_parallel(
+        src, sim_start_mjd_s, times_mjd_s, nt_sub=50, nf_sub=50
+    )
